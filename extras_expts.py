@@ -4,7 +4,7 @@
 #####
 'tags':[],
 'script':'scripts/multiply.py',
-'params':'parameters.py',
+'params':None,
 'extensions':['*.py','../bilayers/codes/*.py'],
 'settings':"""
 step: large
