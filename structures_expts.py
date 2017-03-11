@@ -13,23 +13,23 @@
 'settings':"""
 
 USAGE NOTE:|
-	developing helix routines
-	...
+	this creates a coiled-coil structure (the "helixer" name is clumsy)
 
 step: helix
 sequence:|
-	MIPPQEASARRREIEDKLKQEEETLSFIRDSLEKSDQLTKNMVSILSSFESRLMKLENSI
-	IPVHKQTENLQRLQENVEKTLSCLDHVISYYHVASDTEKIIREGPTGRLEEYLGSMAKIQ
-	KAVEYFQDNSPDSPELNKVKLLFERGKESLESEFRSLMTRHSKVISPVLVLDLISADDEL
-	EVQEDVVLEHLPESVLQDVIRISRWLVEYGRNQDFMNVYYQIRSSQLDRSIKGLKEHFRK
-	SSSSSGVPYSPAIPNKRKDTPTKKPIKRPGRDDMLDVETDAYIHCVSAFVRLAQSEYQLL
-	MGIIPEHHQKKTFDSLIQDALDGLMLEGENIVSAARKAIIRHDFSTVLTVFPILRHLKQT
-	KPEFDQVLQGTAASTKNKLPGLITSMETIGAKALEDFADNIKNDPDKEYNMPKDGTVHEL
-	TSNAILFLQQLLDFQETAGAMLASQETSSSATSYNSEFSKRLLSTYICKVLGNLQLNLLS
-	KSKVYEDPALSAIFLHNNYNYILKSLEKSELIQLVAVTQKTAERSYREHIEQQIQTYQRS
-	WLKVTDYIAEKNLPVFQPGVKLRDKERQMIKERFKGFNDGLEELCKIQKAWAIPDTEQRD
-	KIRQAQKSIVKETYGAFLHRYSSVPFTKNPEKYIKYRVEQVGDMIDRLFDTSA
+	TIPFAPLSQSKTSHGVSLSIVMEGDYRDSQYTTSYPIDKRHGGSFSADTRQAVTGSESHT
+	LKDPETNPLVLNREFTIQEDDKDPIQLKVTPLKDNKSRYYIGSFEPRCLALLFVEYTIAC
+	PILLLQSRAGDVEVRRPEGIESGALLHHRMLSIMMVLQLDEPKLFSLPEKDYIKTFGDDS
+	LISEVRLKQVAELAEILIGKNQYYETIQSFLQYVASEKRKLKVLKMERFAVGSMIASNIF
+	EPLSQKKRLEVASLYYIKSFLCYIKNPYDELRRKADLHTIESAMKSAILSVQDVSGHDRT
+	GDKFKKQDINNNEAPLSLVKFLQRMFEEDGYPNKEVESLERALKSNILKYQCSKFAYPTG
+	TKDLVNADDKHKEEDQQDEKHADREQSTDLLEKTFVAHMVVESELLRSELFSQPKQRREN
+	RSSGHELRKLPGKVAQSLQAVSFMDEHSIQTYVEIISLTKNNMAILNPLNENFDTKLSES
+	SIATKLELRIEKILMAAGTIISPKNASDARVPGEQGKIIVLDAEDDSISELFYYKQTVNF
+	SSDYRKLRKSIHTWETQSQFRQEQSLINRELVVVLITYIRALGFAKLQENDQDIRNSDME
+	VLYDPTKLQVWVPTKKEWIHLKSQMEIVISITNEKTERRAQPQLVKEHLRPQQ
 secondary structure: ''.join(['H' for i in range(1,90+1)])
+sequence slice: "1-90"
 
 #---assume an ideal coiled coil
 oligomer specs:{'n_coils':2,'anti':True,'residue_shift':0}
@@ -38,7 +38,6 @@ residue_library: @martini/library-residues
 sources: ['@martini/martini-sources.ff']
 files: ['@martini/library-general-structs/martini-water.gro']
 force field: martini-sources
-sequence slice: "1-90"
 review 3d: false
 backwards script: @martini/bin/backward/backward.py
 solvent: martini-water
@@ -65,76 +64,56 @@ mdp specs:|{
 
 """},
 
-'helixer_old_settings':{
+'coiled_coil_only':{
 #####
 ####
 ###
 ##
 #
-'tags':[],
-'script':'scripts/structure_explorer.py',
-'params':'parameters.py',
-'extensions':['geometry_tools/structural_biology.py'],
+'tags':['cgmd'],
+'script':'scripts/coiled_coil_only.py',
+'params':'@bilayers/parameters.py',
+'extensions':['geometry_tools/*.py','@bilayers/codes/bilayer.py'],
 'settings':"""
 
 USAGE NOTE:|
-	developing helix routines
-	...
+	forked from "helixer" to create the helix without solvent
+	meant to precede a flat-bilayer routine
 
 step: helix
-sequence: |
-	MIPPQEASARRREIEDKLKQEEETLSFIRDSLEKSDQLTKNMVSILSSFESRLMKLENSI
-	IPVHKQTENLQRLQENVEKTLSCLDHVISYYHVASDTEKIIREGPTGRLEEYLGSMAKIQ
-	KAVEYFQDNSPDSPELNKVKLLFERGKESLESEFRSLMTRHSKVISPVLVLDLISADDEL
-	EVQEDVVLEHLPESVLQDVIRISRWLVEYGRNQDFMNVYYQIRSSQLDRSIKGLKEHFRK
-	SSSSSGVPYSPAIPNKRKDTPTKKPIKRPGRDDMLDVETDAYIHCVSAFVRLAQSEYQLL
-	MGIIPEHHQKKTFDSLIQDALDGLMLEGENIVSAARKAIIRHDFSTVLTVFPILRHLKQT
-	KPEFDQVLQGTAASTKNKLPGLITSMETIGAKALEDFADNIKNDPDKEYNMPKDGTVHEL
-	TSNAILFLQQLLDFQETAGAMLASQETSSSATSYNSEFSKRLLSTYICKVLGNLQLNLLS
-	KSKVYEDPALSAIFLHNNYNYILKSLEKSELIQLVAVTQKTAERSYREHIEQQIQTYQRS
-	WLKVTDYIAEKNLPVFQPGVKLRDKERQMIKERFKGFNDGLEELCKIQKAWAIPDTEQRD
-	KIRQAQKSIVKETYGAFLHRYSSVPFTKNPEKYIKYRVEQVGDMIDRLFDTSA
+sequence:|
+	TIPFAPLSQSKTSHGVSLSIVMEGDYRDSQYTTSYPIDKRHGGSFSADTRQAVTGSESHT
+	LKDPETNPLVLNREFTIQEDDKDPIQLKVTPLKDNKSRYYIGSFEPRCLALLFVEYTIAC
+	PILLLQSRAGDVEVRRPEGIESGALLHHRMLSIMMVLQLDEPKLFSLPEKDYIKTFGDDS
+	LISEVRLKQVAELAEILIGKNQYYETIQSFLQYVASEKRKLKVLKMERFAVGSMIASNIF
+	EPLSQKKRLEVASLYYIKSFLCYIKNPYDELRRKADLHTIESAMKSAILSVQDVSGHDRT
+	GDKFKKQDINNNEAPLSLVKFLQRMFEEDGYPNKEVESLERALKSNILKYQCSKFAYPTG
+	TKDLVNADDKHKEEDQQDEKHADREQSTDLLEKTFVAHMVVESELLRSELFSQPKQRREN
+	RSSGHELRKLPGKVAQSLQAVSFMDEHSIQTYVEIISLTKNNMAILNPLNENFDTKLSES
+	SIATKLELRIEKILMAAGTIISPKNASDARVPGEQGKIIVLDAEDDSISELFYYKQTVNF
+	SSDYRKLRKSIHTWETQSQFRQEQSLINRELVVVLITYIRALGFAKLQENDQDIRNSDME
+	VLYDPTKLQVWVPTKKEWIHLKSQMEIVISITNEKTERRAQPQLVKEHLRPQQ
 secondary structure: ''.join(['H' for i in range(1,90+1)])
-sources: ['@martini/martini-sources.ff']
-spacing: 0.35
 sequence slice: "1-90"
-martinize path: '~/libs/martinize.py'
-residue_library: 'inputs/martini/library-residues'
-backmapper path: '~/libs/martini-backmapper'
-crude structure: helix-crude
-atomistic structure: helix
-atomistic minimization: true
-atomistic force field: charmm36
-force field: martini
-ff includes:| ['martini-v2.2','martini-v2.0-lipids',
- 'martini-v2.2-aminoacids','martini-v2.0-ions']
-water: tip3p
-mdp specs atomistic:|
- {'group':'aamd',
- 'input-em-steep-in.mdp':['minimize',{'nsteps':10000}],
- 'input-md-in.mdp':None}
-mdp specs:|
- {'group':'cgmd',
- 'input-em-steep-in.mdp':['minimize'],
- 'input-md-in.mdp':[{'temperature':'protein-vacuum','dt':0.001,
- 'groups':'blank','pressure':'npt-isotropic-weak','nsteps':100000,'nstxtcout':1000}],
- 'input-md-npt-eq-in.mdp':[{'temperature':'protein-vacuum','dt':0.001,
- 'groups':'blank','pressure':'npt-isotropic-weak','nsteps':100000,'nstxtcout':1000}]}
-equilibration: 'npt'
-spacecurve: 'lambda x,pitch=1.0,yaw=0.1:(pitch*np.cos(yaw*x),pitch*np.sin(yaw*x),x)'
-lattice: [[0,0,0],[0,0,2.5]]
-box buffer: 10.0
-water box: @martini/library-general-structs/martini-water.gro
-files: []
-atom resolution: cgmd
-sol: W
-run part two: True
-orientations: [0,180]
-wind_backwards: False
-ionic strength: 0.150
-cation: NA+
-anion: CL-
-protein water gap: 3
+
+#---assume an ideal coiled coil
+oligomer specs:{'n_coils':2,'anti':True,'residue_shift':0}
+
+residue_library: @martini/library-residues
+sources: ['@martini/martini-sources.ff']
+files: ['@martini/library-general-structs/martini-water.gro']
+force field: martini-sources
+review 3d: false
+backwards script: @martini/bin/backward/backward.py
+martinize script: @martini/bin/martinize.py
+atomistic force field: charmm27
+
+mdp specs:|{
+    'group':'cgmd',
+    'mdps':{
+        'input-em-steep-in.mdp':['minimize'],
+        },
+    }
 
 """},
 
