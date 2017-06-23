@@ -129,9 +129,69 @@ def review_beads(*strands):
 		lineplot(*np.array([b[0] for b in beads]).T,r=0.05)
 	mlab.show()
 
-def make_coiled_coil(gro):
+def make_coiled_coil_deprecated(gro):
 	"""
 	Replaces lib_helices.place_helices from previous incarnations of automacs.
+	"""
+	aa_codes1,aa_codes3 = GMXTopology._aa_codes1,GMXTopology._aa_codes3
+	seq = map(lambda x:dict(zip(aa_codes1,aa_codes3))[x],state.sequence)
+	#---sub-slice the sequence
+	if state.sequence_slice:
+		seqcut = [int(d)-1 for d in state.sequence_slice.split('-')]
+		#---convert to pythonic slice
+		seqcut = slice(seqcut[0],seqcut[1]+1)
+	else: seqcut = slice(None,None)
+	seq = list(seq)[seqcut]
+	n_residues = len(seq)
+
+	anti = state.oligomer_specs.get('anti',False)
+	seq_a,seq_b = list(seq),list(seq)[::-1 if anti else 1]
+	if state.oligomer_specs['n_coils']!=2: raise Exception('n_coils must be 2')
+	#---crude_martini_residues must remove termini so we add false termini here
+	backbone_a = make_coiled_coil_backbone_crick(n_residues+2)
+	strand_a = crude_martini_residues(backbone_a,['ALA']+seq_a+['ALA'])
+	backbone_b = make_coiled_coil_backbone_crick(n_residues+2,offset=np.pi,
+		residue_shift=state.oligomer_specs['residue_shift'])
+	strand_b = crude_martini_residues(backbone_b,['ALA']+seq_b+['ALA'])
+	seqs = {'a':seq_a,'b':seq_b}
+
+	#---check your work in three dimensions
+	if state.review_3d: review_beads(strand_a,strand_b)
+
+	#---! systematize the path to the amino acids ITP using the landscape or force field meta or something
+	model = GMXTopology(state.here+os.path.join(state.force_field+'.ff','martini-v2.2-aminoacids.itp'))
+	#---write the helices
+	for snum,(strand,letter) in enumerate(zip([strand_a,strand_b],'ab')):
+		#---compile the necessary metadat about the protein beads
+		residue_indices,residue_names,atom_names,coords = [],[],[],[]
+		residue_indices = np.concatenate([np.ones(len(j))*jj for jj,j in enumerate(strand)])+1
+		residue_names = [seqs[letter][jj] for jj,j in enumerate(strand) for i in j]
+		#---these are the atom names from the topology but MARTINI uses a simpler BB,SCN format
+		atom_names = [i['atom'] for s in seqs[letter] for i in model.molecules[s]['atoms']]
+		atom_names = [{0:'BB',1:'SC1',2:'SC2',3:'SC3',4:'SC4',5:'SC5'}[ii] 
+			for s in seqs[letter] for ii,i in enumerate(model.molecules[s]['atoms'])]
+		coords = np.array([i for j in strand for i in j])
+		#---no negative coordinates
+		coords -= coords.min(axis=0)
+		#---box vectors slightly larger
+		box_vector = coords.max(axis=0)*1.5
+		#---avoid small-box errors
+		box_vector[np.where(box_vector<10)] = 10.0
+		#---use GMXStructure to write the gro
+		another = GMXStructure(pts=coords+box_vector/2.0,box=box_vector,
+			residue_indices=residue_indices,residue_names=residue_names,atom_names=atom_names)
+		if snum==0: struct = another
+		else: struct.add(another)
+		another.write(state.here+'helix_%s.gro'%letter)
+	struct.write(state.here+'helices.gro')
+	#---! everything picks up in another function which is a fairly crude way to make the helix
+	#---send the no-suffix structure names to the next step
+	make_coiled_coil_simple('helix_a','helix_b')
+
+def make_coiled_coil_SEE_MULTIMER(gro):
+	"""
+	Replaces lib_helices.place_helices from previous incarnations of automacs.
+	Original version lacked Multimer -- this was developed to replace it with a more coherent protein class.
 	"""
 	aa_codes1,aa_codes3 = GMXTopology._aa_codes1,GMXTopology._aa_codes3
 	seq = map(lambda x:dict(zip(aa_codes1,aa_codes3))[x],state.sequence)
@@ -547,3 +607,4 @@ def place_helices_deprecated(gro,review=False,**kwargs):
 			structure.__dict__[key] = np.concatenate((structure.__dict__[key],structure_add.__dict__[key]))
 		structure.points = np.concatenate((structure.points,structure_add.points + np.array(xyz)))
 	structure.write(state.here+'%s.gro'%gro)
+
