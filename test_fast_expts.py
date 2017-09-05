@@ -19,9 +19,10 @@ shutil.copyfile(amx.settings.ready,amx.settings.store)
 ##
 #
 'metarun':[
-{'step':'bilayer','do':'bilayer_control','settings':"""
+{'step':'bilayer','do':'bilayer_control_cgmd','settings':"""
 step: bilayer
 monolayer top: 90
+monolayer bottom: 90
 composition top: {'DOPC':0.64,'DOPS':0.16,'POP2':0.2}
 composition bottom: {'POPC':1.0}
 """},
@@ -30,7 +31,7 @@ ready: s01-bilayer/md.part0001.gro
 store: inputs/bilayer-cgmd-small.gro
 """},
 {'step':'protein','do':'martinize','settings':"""
-start structure: inputs/helix0.pdb
+start structure: inputs/structure-repo/proteins/helix0.pdb
 """},
 {'step':'adhere','do':'bilayer_protein_adhesion','settings':"""
 force field: martini_upright_alt
@@ -39,7 +40,7 @@ placement method: banana
 group up: resid 19
 group down: resid 7
 group origin: resid 7
-bilayer structure: inputs/bilayer-cgmd-small-flat.gro
+bilayer structure: inputs/structure-repo/bilayers-cgmd/bilayer-cgmd-small-flat.gro
 protein_lattice:|{
 	'nrows':1,'ncols':1,
 	'lattice_type':'square',
