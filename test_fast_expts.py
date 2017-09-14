@@ -6,18 +6,20 @@
 ###
 ##
 #
+'tags':['aamd_cgmd','tag_support'],
 'quick':"""
 import amx,shutil
 shutil.copyfile(amx.settings.ready,amx.settings.store)
 """,
 },
 
-'ultra':{
+'ultra1':{
 #####
 ####
 ###
 ##
 #
+'tags':['cgmd','tag_?!testset'],
 'metarun':[
 {'step':'bilayer','do':'bilayer_control_cgmd','settings':"""
 step: bilayer
@@ -51,14 +53,15 @@ protein_lattice:|{
 """},
 ]},
 
-'bilayer288':{
+'bilayer_demo_288':{
 #####
 ####
 ###
 ##
 #
+'tags':['cgmd','tested_2017.09.14','tag_continues'],
 'metarun':[
-{'step':'bilayer','do':'bilayer_control','settings':"""
+{'step':'bilayer','do':'bilayer_control_cgmd','settings':"""
 step: bilayer
 monolayer top: 144
 composition top: {'DOPC':0.64,'DOPS':0.16,'POP2':0.2}
@@ -71,12 +74,13 @@ store: inputs/structure-repo/bilayers-cgmd/bilayer-cgmd-288.gro
 """},
 ]},
 
-'enth-martini-demo':{
+'enth_demo':{
 #####
 ####
 ###
 ##
 #
+'tags':['cgmd','tag_structure_repo'],
 'metarun':[
 {'step':'protein','do':'martinize','settings':"""
 start structure: inputs/structure-repo/proteins/1H0A-prepped.pdb
@@ -105,6 +109,7 @@ protein_lattice:|{
 ###
 ##
 #
+'tags':['cgmd','tag_?!testset'],
 'metarun':[
 {'step':'bilayer','do':'bilayer_control','settings':"""
 step: bilayer

@@ -6,7 +6,7 @@
 	###
 	##
 	#
-	'tags':['cgmd'],
+	'tags':['cgmd','tag_exo70'],
 	'script':'scripts/coiled_coil_linker_dev.py',
 	'params':'@bilayers/parameters.py',
 	'extensions':['geometry_tools/*.py','@bilayers/codes/bilayer.py'],
@@ -70,7 +70,7 @@
 	###
 	##
 	#
-	'tags':['cgmd'],
+	'tags':['cgmd','tag_exo70'],
 	'script':'scripts/coiled_coil_only.py',
 	'params':'@bilayers/parameters.py',
 	'extensions':['geometry_tools/*.py','@bilayers/codes/bilayer.py'],

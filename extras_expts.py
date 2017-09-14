@@ -2,7 +2,8 @@
 
 'multiply':{
 #####
-'tags':[],
+#---note that this was tested with e.g. bilayer_control_multiply
+'tags':['aamd_cgmd','tested_2017.09.13'],
 'script':'scripts/multiply.py',
 'params':None,
 'extensions':['*.py','../bilayers/codes/*.py'],
