@@ -53,7 +53,7 @@ protein_lattice:|{
 """},
 ]},
 
-'bilayer_demo_288':{
+'bilayer_288_demo':{
 #####
 ####
 ###
@@ -62,6 +62,7 @@ protein_lattice:|{
 'tags':['cgmd','tested_2017.09.14','tag_continues'],
 'metarun':[
 {'step':'bilayer','do':'bilayer_control_cgmd','settings':"""
+#---this demo generates a small coarse-grained bilayer for use in a test set
 step: bilayer
 monolayer top: 144
 composition top: {'DOPC':0.64,'DOPS':0.16,'POP2':0.2}
@@ -70,36 +71,7 @@ thickness: 18
 """},
 {'quick':'table','settings':"""
 ready: s01-bilayer/md.part0001.gro
-store: inputs/structure-repo/bilayers-cgmd/bilayer-cgmd-288.gro
-"""},
-]},
-
-'enth_demo':{
-#####
-####
-###
-##
-#
-'tags':['cgmd','tag_structure_repo'],
-'metarun':[
-{'step':'protein','do':'martinize','settings':"""
-start structure: inputs/structure-repo/proteins/1H0A-prepped.pdb
-"""},
-{'step':'adhere','do':'bilayer_protein_adhesion','settings':"""
-force field: martini_upright_alt
-sources: ['@martini/auto_ff/martini_upright_alt.ff']
-placement method: globular_up_down
-group up: all
-group down: ['resid 1-22','resid 68-72']
-group origin: ['resid 1-22','resid 68-72']
-bilayer structure: inputs/structure-repo/bilayers-cgmd/bilayer-cgmd-288.gro
-protein_lattice:|{
-	'nrows':1,'ncols':1,
-	'lattice_type':'square',
-	'space_scale':20,
-	'total_proteins':1,
-	'protein_shift_up':1.0,
-	}
+store: inputs/bilayer-cgmd-288.gro
 """},
 ]},
 
@@ -147,8 +119,7 @@ protein_lattice:|{
 	'lattice_type':'square',
 	'space_scale':20,
 	'total_proteins':1,
-	'protein_shift_up':1.0,
-	}
+	'protein_shift_up':1.0,}
 """},
 {'step':'protein','do':'martinize','settings':"""
 start structure: inputs/helix0.pdb
