@@ -102,7 +102,7 @@ protein_lattice:|{
 ###
 ##
 #
-'tags':['cgmd','tag_?!testset'],
+'tags':['cgmd','tested_2017.09.20'],
 'metarun':[
 {'step':'bilayer','do':'bilayer_control_flat','settings':"""
 step: bilayer
