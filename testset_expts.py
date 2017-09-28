@@ -46,7 +46,9 @@ TESTSETS:
 	requires 9.4min and is generally stable thanks to npt-bilayer equilibration bilayer_protein_adhesion
 	may be less stable on dramatically different system sizes (recommend multiply step for large systems)
 2. testset_bilayer_protein_flat: attach helix0 structure from @structure-repo to a new, flat bilayer
-	...testing now!
+	equivalent to testset_bilayer_protein_free with added restraints
+	note that users should use script-continue.sh to run the simulation until satisfactory binding
+	restraints can be released with "make go bilayer_release" which was tested with the enth_demo experiment
 3. testset_ultra1: a combination testset that includes items above. useful only for validating automacs
 
 NOTES:
@@ -63,7 +65,7 @@ NOTES:
 ###
 ##
 #
-'tags':['cgmd','tested_2017.09.20'],
+'tags':['cgmd','tested_2017.09.20','note_structure_repo_protein'],
 'metarun':[
 {'step':'bilayer','do':'bilayer_control_cgmd','settings':"""
 step: bilayer
@@ -102,7 +104,7 @@ protein_lattice:|{
 ###
 ##
 #
-'tags':['cgmd','tested_2017.09.20'],
+'tags':['cgmd','tested_2017.09.20','note_structure_repo_protein'],
 'metarun':[
 {'step':'bilayer','do':'bilayer_control_flat','settings':"""
 step: bilayer
@@ -156,7 +158,7 @@ mdp specs:|{
 ##
 #
 #---a combination testset
-'tags':['cgmd','tag_UNTESTED'],
+'tags':['cgmd','dev'],
 'metarun':[
 {'step':'bilayer','do':'bilayer_control_cgmd','settings':"""
 step: bilayer
