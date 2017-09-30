@@ -33,6 +33,7 @@ def multiply(nx=1,ny=1,nz=1,quirky_ions=True,structure='system-previous'):
 	multiplies = [(structure,'system')]
 	#---make sure the restraints were registered
 	do_restraints = state.file_registry and 'system-leaflets-flat.gro' in state.file_registry
+	#---add to the list of pairs of small-big files
 	if do_restraints: multiplies += [('system-leaflets-flat','system-flat')]
 	#---loop over configurations we need to multiply
 	for from_fn,to_fn in multiplies:
@@ -46,11 +47,14 @@ def multiply(nx=1,ny=1,nz=1,quirky_ions=True,structure='system-previous'):
 		#---locate the restraint rule
 		rule_ind = [ii for ii,i in enumerate(state.gmx_call_rules) 
 			if i['command']=='grompp' and i['flag']=='r']
-		rule = state.gmx_call_rules.pop(0)
+		if len(rule_ind)!=1: 
+			raise Exception('there appear to be multiple gmx_call_rules for grompp restraints')
+		else: rule = state.gmx_call_rules.pop(rule_ind[0])
+		#---we update the restraint rule to use the modified bilayer
 		rule['value'] = 'system-flat.gro'
 		register_gmx_call(**rule)
+		register_file('system-flat.gro')
 	#---update the composition
 	state.composition = struct.detect_composition()
 	#---we retain the original lipid list since detect_composition cannot understand alternate names
 	state.lipids = state.before[-1]['lipids']
-
