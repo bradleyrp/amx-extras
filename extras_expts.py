@@ -21,4 +21,21 @@ ny: 2
 """
 },
 
+'homology_demo':{
+#####
+####
+###
+##
+#
+'tags':['aamd','tag_TEST?'],
+'metarun':[
+{'step':'homology','do':'homology','settings':"""
+start structure: @structure-repo/proteins/helix0.pdb
+template chain : {'A':{'startres':1,'stopres':22}}
+point mutation : {'A':['M10T']}
+numbering: cryst
+modeller script: @homology/modeller_script.py
+refinement: fast
+"""}]},
+
 }

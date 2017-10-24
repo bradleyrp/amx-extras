@@ -4,6 +4,7 @@
 MESH ROUTINES
 
 Useful for making triangulated surfaces.
+Note that this script is almost verbatim-equivalent with codes/mesh.py at github.com/bradleyrp/omni-single.
 """
 
 import numpy as np

@@ -10,7 +10,7 @@ init()
 make_step(settings.step)
 write_continue_script()
 get_last_sources()
-get_last_frame()
+gmx_get_last_frame()
 get_last_mdps()
 #---adding mdp_specs to settings will overwrite them
 if state.mdp_specs: write_mdp(param_file=state.mdp_parameters)

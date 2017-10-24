@@ -52,7 +52,7 @@ def multiply(nx=1,ny=1,nz=1,quirky_ions=True,structure='system-previous'):
 		else: rule = state.gmx_call_rules.pop(rule_ind[0])
 		#---we update the restraint rule to use the modified bilayer
 		rule['value'] = 'system-flat.gro'
-		register_gmx_call(**rule)
+		gmx_register_call(**rule)
 		register_file('system-flat.gro')
 	#---update the composition
 	state.composition = struct.detect_composition()
