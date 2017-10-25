@@ -21,13 +21,13 @@ ny: 2
 """
 },
 
-'homology_demo':{
+'demo_homology_helix0':{
 #####
 ####
 ###
 ##
 #
-'tags':['aamd','tag_TEST?'],
+'tags':['aamd','test'],
 'metarun':[
 {'step':'homology','do':'homology','settings':"""
 start structure: @structure-repo/proteins/helix0.pdb
