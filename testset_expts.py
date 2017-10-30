@@ -22,6 +22,7 @@ shutil.copyfile(amx.settings.ready,amx.settings.store)
 #
 #---a legacy test used to make a small bilayer for the structure-repo
 'tags':['cgmd','tested_2017.09.14'],
+'prelude':'make go lipidome clean && make clean sure',
 'metarun':[
 {'step':'bilayer','do':'bilayer_control_cgmd','settings':"""
 #---this demo generates a small coarse-grained bilayer for use in a test set
