@@ -248,7 +248,7 @@ def make_coiled_coil_SEE_MULTIMER(gro):
 	#---send the no-suffix structure names to the next step
 	make_coiled_coil_simple('helix_a','helix_b')
 
-def backmapper_wrapper(target,destination):
+def backmapper_wrapper(target,destination,jitter=True):
 	"""
 	Run the backmapper.
 	!It would be awesome to rewrite the backmapper.
@@ -262,9 +262,9 @@ def backmapper_wrapper(target,destination):
 	out = os.path.abspath(state.here+'backmap-'+destination)
 	if sys.version_info>=(3,0): raise Exception('backward.py needs python 2')
 	bash('python %s -f %s -o %s.gro'%(backward_fn,target,out),cwd=backward_dn)
-	jitter(structure=out,gro=destination+'.gro',cwd=state.here)
+	if jitter: jitter_positions(structure=out,gro=destination+'.gro',cwd=state.here)
 
-def jitter(structure,gro,cwd='.',interval=(-0.02,0.02),nanjittter=0.1):
+def jitter_positions(structure,gro,cwd='.',interval=(-0.02,0.02),nanjittter=0.1):
 
 	"""
 	The backmapper makes colinear points which chokes the minimizer until it segfaults.
@@ -607,4 +607,3 @@ def place_helices_deprecated(gro,review=False,**kwargs):
 			structure.__dict__[key] = np.concatenate((structure.__dict__[key],structure_add.__dict__[key]))
 		structure.points = np.concatenate((structure.points,structure_add.points + np.array(xyz)))
 	structure.write(state.here+'%s.gro'%gro)
-
