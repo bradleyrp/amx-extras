@@ -68,9 +68,16 @@ class ProteinMultimer:
 		subject = self.select_gro(name)
 		subject.write(state.here+'%s.gro'%gro,renumber=False)
 
-	def main(self):
+	def main(self,debug_pseudoscript=False):
 		"""The main loop iterates over commands in the pseudoscript."""
-		for command,kwargs in self.pseudoscript: getattr(self,command)(**kwargs)
+		for cnum,(command,kwargs) in enumerate(self.pseudoscript): 
+			if not debug_pseudoscript: getattr(self,command)(**kwargs)
+			else:
+				try: getattr(self,command)(**kwargs)
+				except Exception as e:
+					from runner.makeface import tracebacker
+					raise Exception('failed in the pseudoscript, command number %d: %s,%s: %s'%(
+						cnum+1,command,kwargs,e))
 
 	def pdb(self,**kwargs):
 		"""Load a PDB into the multimer."""
@@ -259,11 +266,13 @@ class ProteinMultimer:
 		anti = oligomer_specs.get('anti',False)
 		seq_a,seq_b = list(seq),list(seq)[::-1 if anti else 1]
 		if oligomer_specs['n_coils']!=2: raise Exception('n_coils must be 2')
+		#---!!!!!!!!!!!!!!!
+		overrides = {'major_radius':10.0}
 		#---crude_martini_residues must remove termini so we add false termini here
-		backbone_a = make_coiled_coil_backbone_crick(n_residues+2)
+		backbone_a = make_coiled_coil_backbone_crick(n_residues+2,overrides=overrides)
 		strand_a = crude_martini_residues(backbone_a,['ALA']+seq_a+['ALA'])
 		backbone_b = make_coiled_coil_backbone_crick(n_residues+2,offset=np.pi,
-			residue_shift=oligomer_specs.get('residue_shift',0))
+			residue_shift=oligomer_specs.get('residue_shift',0),overrides=overrides)
 		strand_b = crude_martini_residues(backbone_b,['ALA']+seq_b+['ALA'])
 		seqs = {'a':seq_a,'b':seq_b}
 
@@ -309,7 +318,7 @@ class ProteinMultimer:
 		#---loop over incoming chains
 		for chain in chains: 
 			#---run the backmapper
-			backmapper_wrapper(chain+'.gro',chain+'-aa-back')
+			backmapper_wrapper(chain+'.gro',chain+'-aa-back',cwd=state.here)
 			#---we have to run pdb2gmx to make the residues whole again
 			#---! backmapper misses atoms sometimes
 			#---note the nice use of the "-p" flag below modifies the standard pdb2gmx so it includes 
@@ -325,7 +334,7 @@ class ProteinMultimer:
 				os.path.abspath(state.martinize_script),chain+'-aa-whole.gro',
 				chain+'-martinized',chain+'-martinized',
 				'' if not state.secondary_structure else ' -ss %s'%state.secondary_structure),
-				cwd=state.here,log='martinize')
+				cwd=state.here,log='martinize-%s'%chain)
 			#---get the name of the itp from the topology
 			top = state.here+chain+'-martinized.top'
 			chain_top = GMXTopology(top)
@@ -367,8 +376,10 @@ class ProteinMultimer:
 			another = GMXStructure(state.here+chain+'-martinized.gro')
 			if cnum==0: struct = another
 			else: struct.add(another)
-		struct.write(state.here+'vacuum.gro')
-		write_topology('vacuum.top')
+		#---! renamed from vacuum to linker (the name) 
+		#---! ... but this was probably used for vacuum simulation of the linker in a previous demo
+		struct.write(state.here+'%s.gro'%name)
+		write_topology('%s.top'%name)
 
 		#---???
 		if False:
@@ -429,7 +440,7 @@ class ProteinMultimer:
 
 		#---when this is complete we register the result in the contents list
 		#---! fix the vacuum.gro to use a better name
-		self.contents[name] = GMXStructure(state.here+'vacuum.gro')
+		self.contents[name] = GMXStructure(state.here+'%s.gro'%name)
 
 	def callout(self,**kwargs):
 		"""
@@ -460,6 +471,8 @@ class ProteinMultimer:
 		"""
 		structure = kwargs.pop('structure')
 		gro = kwargs.pop('name')
+		log = kwargs.pop('log','martinize')
+		secondary_structure = kwargs.pop('secondary_structure',None)
 		if kwargs: raise Exception('unprocessed kwargs %s'%kwargs)
 		#---convert GRO to PDB because martinize likes it that way
 		gmx('editconf',structure=structure,o='%s.pdb'%structure,log='editconf-martinize-%s'%structure)
@@ -470,16 +483,18 @@ class ProteinMultimer:
 		#---! write a separate position restrained version if desired by dropping -p None
 		cmd += ' -f %s -o %s.top -x %s.pdb '%('%s.pdb'%structure,gro,gro)
 		#---dssp use should be standard for MARTINI proteins
-		if state.dssp_path: 
+		if state.dssp_path and secondary_structure==None: 
 			dssp_fn = os.path.abspath(os.path.expanduser(state.dssp_path))
 			if not os.path.isfile(dssp_fn):
 				raise Exception('cannot find %s'%dssp_fn)
 			cmd += ' -dssp %s'%dssp_fn
+		#---customized secondary structure
+		elif secondary_structure!=None: cmd += ' -ss %s'%secondary_structure
+		else: raise Exception('secondary structure problem!')
 		if state.martinize_ff_version: cmd += ' -ff %s'%state.martinize_ff_version
 		if state.martinize_flags: cmd += ' '+state.martinize_flags
-		bash(cmd,cwd=state.here,log='martinize')
+		bash(cmd,cwd=state.here,log=log)
 		if not os.path.isfile(state.here+'%s.pdb'%gro): raise Exception('martinize failed')
-		import ipdb;ipdb.set_trace()
 		gmx_run(state.gmxpaths['editconf']+' -f %s.pdb -o %s.gro'%(gro,gro),log='editconf-convert-pdb')
 		#---end martinize sequence, truncated from the original, which loaded ITP files into state
 		#---the martinize.py script says that "this should probably be gathered in a Universe class"
@@ -495,17 +510,35 @@ class ProteinMultimer:
 		#---assume all ITP files on disk are due to martinize
 		new_itps = [i for i in itps if os.path.isfile(state.here+i)]
 		#---use the topology class to catalogue the files and their molecules
+		assoc_topology = []
 		for new_itp in new_itps:
 			#---all ITPs built with martinize are renamed (prefixed with the output name and lowercased)
 			topname = re.match('^(.+)\.itp',new_itp).group(1).lower()
+			#---!!! VERY FRUSTRATED WITH INELEGANT DATA STRUCTURES SO HACKING! also martinize broken!
+			with open(state.here+new_itp,'r') as fp: text = fp.read()
+			deletions = [
+				'#ifndef RUBBER_FC(.*?)#endif',
+				'#ifndef NO_RUBBER_BANDS(.*?)#endif',
+				'#ifndef POSRES_FC(.*?)#endif',
+				'#ifdef POSRES(.*?)#endif',]
+			for kill in deletions:
+				text = re.sub(kill,'',text,flags=re.M+re.DOTALL)
+			with open(state.here+new_itp,'w') as fp: fp.write(text)
 			#---! different types implicitly refer to different files. this should be made explicit
-			self.contents['%s_%s'%(gro,topname)] = GMXTopology(state.here+new_itp)
+			self.contents['%s_%s'%(gro,topname)] = GMXTopology(state.here+new_itp,
+				defs={'posres':False,'no_rubber_bands':True},constraints_to_bonds=True)
+			#---save a bonded version
+			self.contents['%s_%s_bonded'%(gro,topname)] = GMXTopology(state.here+new_itp,
+				defs={'posres':False,'no_rubber_bands':True},constraints_to_bonds=True)
+			assoc_topology.append('%s_%s'%(gro,topname))
 			#---to avoid clutter, and because martinize may be called repeatedly, we clean the files which
 			#---...can easily be written later
 			#---! later when the files are written we need to avoid name collisions in the moleculename column
 			os.remove(state.here+new_itp)
 		#---read the resulting structure back into the contents
 		self.contents[gro] = GMXStructure(state.here+'%s.gro'%gro)
+		#---let the user know which ITPs we found
+		return assoc_topology
 
 	def duplicate(self,name,new):
 		"""
@@ -518,7 +551,7 @@ class ProteinMultimer:
 		Since multimers are connected in multiple places we proceed with piecewise transformations
 		"""
 		if set(kwargs.keys())<=set([
-			'reference_name','reference_selection','subject_name','subject_selection']):
+			'reference_name','reference_selection','subject_name','subject_selection','offset']):
 			#---move a reference to a subject
 			ref_name = kwargs.pop('reference_name')
 			ref_sel = kwargs.pop('reference_selection')
@@ -529,7 +562,7 @@ class ProteinMultimer:
 			#---the reference center is the position we are moving the subject selection to
 			ref_center = ref.cog(ref.select(ref_sel))
 			subject_center = subject.cog(subject.select(subject_sel))
-			subject.points += ref_center - subject_center
+			subject.points += ref_center - subject_center + kwargs.pop('offeset',[0.,0.,0.])
 		else: raise Exception('invalid arguments')
 
 	def rotate(self,**kwargs):
@@ -551,50 +584,88 @@ class ProteinMultimer:
 		"""
 		PROTOTYPING CODE TO BUILD EXO70 MODELS!
 		NEEDS TO BE GENERALIZED EVENTUALLY!
+
+		Previously, we assembled two protein body elements and a linker.
+		Everything is in the right position, so here we stitch it all together.
+		Take the linker and split it. Write a structure with the body and then backmap.
+		Use the backmapped structure to generate a topology.
+		Martinize will read (and expunge the topology).
+		We will internall track the link between structure and topology for now.
 		"""
-		# backmapper_wrapper(chain+'.gro',chain+'-aa-back')
-		# bad idea: gro_combinator('body_cg.gro','body_cg_2.gro',box=[100.,100.,100.],
-		# ... cwd=state.here,gro='combined')
-		#! construct the first dimer
-		base = self.select('body_cg')
-		link = self.select('linker')
-		#---! get half below
-		link_slice = slice(None,201)
-		#---concatenate the structures
-		points = np.concatenate((link.points[link_slice],base.points))
-		residue_names = np.concatenate((link.residue_names[link_slice],base.residue_names))
-		atom_names = np.concatenate((link.atom_names[link_slice],base.atom_names))
-		residue_indices = np.concatenate((link.residue_indices[link_slice],base.residue_indices))
-		another = GMXStructure(pts=points,box=base.box,residue_indices=residue_indices,
-			residue_names=residue_names,atom_names=atom_names)
-		another.write(state.here+'monomer_1_cg.gro')
-		backname = 'monomer_1_back_aa'
-		#---backmap the combined monomer to make the topology using martinize
-		#---! obviously this is a terrible hack
-		#---! inconsistent suffixes below
-		backmapper_wrapper('monomer_1_cg.gro',backname,jitter=True)
-		#---make the topology
-		gmx_run(state.gmxpaths['editconf']+' -f %s.gro -o %s.pdb'%(backname,backname),
-			log='editconf-convert-pdb')
-		martinize(pdb='%s.pdb'%backname)
-
-		#---concatenate the structures
-		link_slice = slice(201+1,None)
-		points = np.concatenate((link.points[link_slice],base.points))
-		residue_names = np.concatenate((link.residue_names[link_slice],base.residue_names))
-		atom_names = np.concatenate((link.atom_names[link_slice],base.atom_names))
-		residue_indices = np.concatenate((link.residue_indices[link_slice],base.residue_indices))
-		another = GMXStructure(pts=points,box=base.box,residue_indices=residue_indices,
-			residue_names=residue_names,atom_names=atom_names)
-		another.write(state.here+'monomer_2_cg.gro')
-		backname = 'monomer_1_back_aa'
-		#---backmap the combined monomer to make the topology using martinize
-		#---! obviously this is a terrible hack
-		#---! inconsistent suffixes below
-		backmapper_wrapper('monomer_1_cg.gro',backname,jitter=True)
-		#---make the topology
-		gmx_run(state.gmxpaths['editconf']+' -f %s.gro -o %s.pdb'%(backname,backname),
-			log='editconf-convert-pdb')
-		martinize(pdb='%s.pdb'%backname)
-
-		import ipdb;ipdb.set_trace()
+		n_mers = 2
+		itp_names,itp_names_equilibrate = [],[]
+		#---! for posterity
+		state.protein_prepared = {'gro':None,'top':None,'composition':[]}
+		#---feeling ambitious so this is going in a loop over mers
+		for mono_num in range(n_mers):
+			base = self.select('body_cg_%d'%(mono_num+1))
+			link = self.select('linker')
+			#---the linker includes chains for each monomer so we pull them out here
+			#---! obviously this is somewhat arbitrary
+			#---! change this order, the resids in the translate, and the rotation in the script
+			#---! ... to change all of the 
+			#---number of points in a linker monomer
+			nplm = 191
+			#---! INITIAL ORDER WAS WRONG AND THIS CAUSED UNTOLD PROBLEMS
+			link_slice = [slice(201,None),slice(None,201)][mono_num]
+			#---! ALSO HAD TO REVERSE IT BUT ONLY FOR THE FIRST ONE
+			link_slice = [np.arange(nplm*1,nplm*2)[::-1],np.arange(nplm*0,nplm*1)[::1]][mono_num]
+			#---concatenate the structures
+			points = np.concatenate((link.points[link_slice],base.points))
+			residue_names = np.concatenate((link.residue_names[link_slice],base.residue_names))
+			atom_names = np.concatenate((link.atom_names[link_slice],base.atom_names))
+			residue_indices = np.concatenate((link.residue_indices[link_slice],base.residue_indices))
+			another = GMXStructure(pts=points,box=base.box,residue_indices=residue_indices,
+				residue_names=residue_names,atom_names=atom_names)
+			another.write(state.here+'monomer_%d_cg.gro'%(mono_num+1))
+			backname = 'monomer_%d_back_aa'%(mono_num+1)
+			#---backmap the combined monomer to make the topology using martinize
+			#---! obviously this is a terrible hack
+			#---! inconsistent suffixes below
+			backmapper_wrapper('monomer_%d_cg.gro'%(mono_num+1),backname,cwd=state.here,jitter=True)
+			#---make the topology
+			gmx_run(state.gmxpaths['editconf']+' -f %s.gro -o %s.pdb'%(backname,backname),
+				log='editconf-convert-pdb')
+			monomer_name = 'monomer_%d'%(mono_num+1)
+			topnames = self.martinize(name=monomer_name,structure=backname,
+				#---override the final secondary structure
+				secondary_structure=settings.complete_secondary_structure)
+			#---! no redundancy check here is this inefficient?
+			#---! note the following names are hardcoded assuming a single chain and hence Protein.itp
+			#---! ...is output by martinize and then parsed by our wrapper around martinize 
+			#---! ...so that the the names are e.g. monomer_1_protein
+			if len(topnames)!=1 or len(self.contents[topnames[0]].molecules.keys())!=1:
+				raise Exception('development. we found redundant topologies coming from martinize')
+			else: 
+				#---rename the molecule
+				topname = topnames[0]
+				molname = self.contents[topname].molecules.keys()[0]
+				molname_new = 'monomer_%d'%(mono_num+1)
+				self.contents[topname].molecules = {molname_new:
+					self.contents[topname].molecules[molname]}
+				self.contents[topname].molecules[molname_new]['moleculetype']['molname'] = molname_new
+				new_itp = 'monomer_%d.itp'%(mono_num+1)
+				self.contents[topname].write(state.here+new_itp)
+				itp_names_equilibrate.append(new_itp)
+				#---write the bonded version
+				new_itp_bonded = 'monomer_%d_bonded.itp'%(mono_num+1)
+				self.contents[topname].write(state.here+new_itp_bonded)
+				#---we save the bonded version to the itp_names for now, but we will switch to the 
+				#---...constraints version after minimization
+				itp_names.append(new_itp_bonded)
+				state.protein_prepared['composition'].append((molname_new,1))
+		#---update the topology, mimicking the end of the original martinize wrapper at martini/martini.py
+		state.itp = state.martinize_itps = itp_names
+		state.martinize_itps_equilibrate = itp_names_equilibrate
+		state.composition = state.protein_prepared['composition']
+		vacuum_struct1 = GMXStructure(state.here+'monomer_1.gro')
+		#---! temporary
+		if True:
+			vacuum_struct2 = GMXStructure(state.here+'monomer_2.gro')
+			vacuum_struct1.add(vacuum_struct2)
+		else: state.composition = [('monomer_1',1)]
+		#---! center the protein which is important for later !!!
+		vacuum_struct1.points -= vacuum_struct1.points.mean(axis=0)
+		vacuum_struct1.write(state.here+'vacuum-unsized.gro')
+		gmx('editconf',structure='vacuum-unsized',gro='vacuum',d=2,c=True,log='editconf-vacuum-box')
+		write_topology('vacuum.top')

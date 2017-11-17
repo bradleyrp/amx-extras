@@ -6,7 +6,7 @@ import numpy as np
 #---! you have to include not_reported functions from other places too?
 _not_reported = ['crude_martini_residues','make_coiled_coil_backbone_crick','review_beads','vecnorm']
 
-def make_coiled_coil_backbone_crick(n_residues,residue_shift=0,offset=0.0):
+def make_coiled_coil_backbone_crick(n_residues,residue_shift=0,offset=0.0,overrides={}):
 	"""
 	The "simple" recipe corresponds to a Crick-style coiled coil.
 	"""
@@ -19,6 +19,7 @@ def make_coiled_coil_backbone_crick(n_residues,residue_shift=0,offset=0.0):
 		'major_radius':4.7,
 		'pitch_alpha_helix':5.4,
 		'residues_per_turn':3.6,}
+	specs.update(**overrides)
 	pitch = specs['pitch']
 	r0,r1 = specs['major_radius'],specs['minor_radius']
 	winding = pitch/specs['pitch_alpha_helix']
@@ -62,7 +63,9 @@ def crude_martini_residues(backbone,seq,offset=0.0):
 		#---two atoms
 		elif len(spec['atoms'])==2: beader_type[mol] = 'two'
 		#---available in the library
-		elif os.path.isfile(os.path.join(lib_res_dn,'%s.gro'%mol)): beader_type[mol] = 'several'
+		elif os.path.isfile(os.path.join(lib_res_dn,'%s.gro'%mol)): 
+			beader_type[mol] = 'several'
+		else: raise Exception('cannot find it in the residue library?')
 	missings = [i for i in model.molecules if i not in beader_type]
 	if any(missings): raise Exception('missing %r from the residue list'%missings)
 	#---load structures for the "complicated" residues
@@ -248,29 +251,36 @@ def make_coiled_coil_SEE_MULTIMER(gro):
 	#---send the no-suffix structure names to the next step
 	make_coiled_coil_simple('helix_a','helix_b')
 
-def backmapper_wrapper(target,destination,jitter=True):
+def backmapper_wrapper(target,destination,cwd,jitter=True,jitter_interval=None):
 	"""
 	Run the backmapper.
 	!It would be awesome to rewrite the backmapper.
 	!Backmapper code is python 2 only.
 	"""
-	target = os.path.abspath(state.here+target)
+	target_fn = os.path.abspath(state.here+target)
 	backward_path = os.path.join(os.getcwd(),state.backwards_script)
-	backward_dn = os.path.dirname(backward_path)
-	backward_fn = os.path.basename(backward_path)
 	#---! paths are absolute so we can execute backward.py in-place
 	out = os.path.abspath(state.here+'backmap-'+destination)
 	if sys.version_info>=(3,0): raise Exception('backward.py needs python 2')
-	bash('python %s -f %s -o %s.gro'%(backward_fn,target,out),cwd=backward_dn)
-	if jitter: jitter_positions(structure=out,gro=destination+'.gro',cwd=state.here)
+	cmd = 'python %s -f %s -o %s.gro'%(backward_path,target_fn,out)
+	print('[RUN] %s'%cmd)
+	bash(cmd,cwd=cwd,log='backmapper-%s'%target)
+	log_fn = os.path.join(state.here,'log-backmapper-%s'%target)
+	with open(log_fn) as fp: logfile = fp.read()
+	import re
+	if re.search('(B|b)ailing',logfile):
+		raise Exception('error in %s'%log_fn)
+	if jitter: jitter_positions(structure=out,gro=destination+'.gro',
+		cwd=state.here,interval=jitter_interval)
 
-def jitter_positions(structure,gro,cwd='.',interval=(-0.02,0.02),nanjittter=0.1):
+def jitter_positions(structure,gro,cwd='.',interval=None,nanjittter=0.1):
 
 	"""
 	The backmapper makes colinear points which chokes the minimizer until it segfaults.
 	Here we add noise to the points to jitter them.
 	"""
 
+	if interval==None: interval = (-0.02,0.02)
 	mol = GMXStructure(os.path.join(cwd,'%s.gro'%structure))
 	mol.points += np.random.random(mol.points.shape)*float(interval[1]-interval[0])+interval[0]
 	#---correct for any nan
