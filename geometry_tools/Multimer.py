@@ -12,6 +12,8 @@ May be expanded to other use-cases later?
 import os,sys,re,shutil,copy,glob
 from datapack import DotDict
 import numpy as np
+#---! this is required on some computers but not others possibly due to weird imports
+from geometry_tools import plane_project,vecangle
 
 def reviewer3d(**kwargs):
 	"""Debug 3D manipulations."""
@@ -323,9 +325,10 @@ class ProteinMultimer:
 			#---! backmapper misses atoms sometimes
 			#---note the nice use of the "-p" flag below modifies the standard pdb2gmx so it includes 
 			#---...a top file
+			water_model = 'none' if state.water==None else state.water
 			gmx('pdb2gmx',base='vacuum-aa-whole-'+chain,structure=chain+'-aa-back.gro',
 				gro=chain+'-aa-whole-over',p='vacuum-aa-'+chain,log='pdb2gmx-'+chain,
-				water=state.water,ff=state.atomistic_force_field)
+				water=water_model,ff=state.atomistic_force_field)
 			#---GRO lacks chains and anyway it's much easier to get topologies for each part separately
 			#---! previously checked that the secondary structure matched the sequence before procedding
 			gmx('editconf',structure=chain+'-aa-whole-over',gro=chain+'-aa-whole',c=True,d='2.0',
