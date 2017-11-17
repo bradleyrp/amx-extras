@@ -7,11 +7,14 @@ Useful for making triangulated surfaces.
 Note that this script is almost verbatim-equivalent with codes/mesh.py at github.com/bradleyrp/omni-single.
 """
 
-import numpy as np
-import scipy
-import scipy.spatial
-import scipy.interpolate
-from numpy import linalg
+try:
+	import numpy as np
+	import scipy
+	import scipy.spatial
+	import scipy.interpolate
+	from numpy import linalg
+#---! automacs tries to load this even for e.g. make upload
+except: pass
 
 _not_reported = ['triarea','vecnorm','facenorm','torusnorm','reclock','beyonder','makemesh','rotation_matrix']
 _shared_extensions = ['vecnorm','rotation_matrix','makemesh']
