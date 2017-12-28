@@ -106,6 +106,7 @@ protein_lattice:|{
 ##
 #
 'tags':['cgmd','tested_2017.09.20','note_structure_repo_protein'],
+'prelude':"make go lipidome clean && make clean sure",
 'metarun':[
 {'step':'bilayer','do':'bilayer_control_flat','settings':"""
 step: bilayer
