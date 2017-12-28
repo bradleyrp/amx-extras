@@ -12,16 +12,15 @@ try:
 	import scipy
 	import scipy.spatial
 	import scipy.interpolate
-	from numpy import linalg
 #---! automacs tries to load this even for e.g. make upload
-except: pass
+except: print('[WARNING] failed to load numpy/scipy. source the environment to fix this')
 
 _not_reported = ['triarea','vecnorm','facenorm','torusnorm','reclock','beyonder','makemesh','rotation_matrix']
 _shared_extensions = ['vecnorm','rotation_matrix','makemesh']
 
 #---geometry functions
-triarea = lambda a : linalg.norm(np.cross(a[1]-a[0],a[2]-a[0]))/2.
-vecnorm = lambda vec: np.array(vec)/linalg.norm(vec)
+triarea = lambda a : np.linalg.norm(np.cross(a[1]-a[0],a[2]-a[0]))/2.
+vecnorm = lambda vec: np.array(vec)/np.linalg.norm(vec)
 facenorm = lambda a: np.cross(a[1]-a[0],a[2]-a[0])
 
 def rotation_matrix(axis,theta):
@@ -80,7 +79,7 @@ def torusnorm(pts1,pts2,vecs):
 	cd = np.array([scipy.spatial.distance.cdist(pts1[:,d:d+1],pts2[:,d:d+1]) for d in range(2)])
 	cd[0] -= (cd[0]>vecs[0]/2.)*vecs[0]
 	cd[1] -= (cd[1]>vecs[1]/2.)*vecs[1]
-	cd2 = linalg.norm(cd,axis=0)
+	cd2 = np.linalg.norm(cd,axis=0)
 	return cd2
 
 def makemesh(pts,vec,growsize=0.2,curvilinear_neighbors=10,
@@ -150,11 +149,11 @@ def makemesh(pts,vec,growsize=0.2,curvilinear_neighbors=10,
 		weights = [areas[sl]/2./np.sum(areas[v2s[v]]) for sl in v2s[v]]
 		tijs = [vecnorm(np.dot(np.identity(3)-np.outer(vertnorms[v],
 			vertnorms[v].T),ab)) for ab in edges]
-		kijs = [np.dot(vertnorms[v].T,ab)/linalg.norm(ab)**2 for ab in edges]
+		kijs = [np.dot(vertnorms[v].T,ab)/np.linalg.norm(ab)**2 for ab in edges]
 		ct = np.sum([weights[ind]*kijs[ind]*np.outer(tijs[ind],tijs[ind]) 
 			for ind,i in enumerate(v2s[v])],axis=0)
-		wsign = 1-2*(linalg.norm(np.array([1,0,0])+\
-			vertnorms[v])<linalg.norm(np.array([1,0,0])-vertnorms[v]))
+		wsign = 1-2*(np.linalg.norm(np.array([1,0,0])+\
+			vertnorms[v])<np.linalg.norm(np.array([1,0,0])-vertnorms[v]))
 		wvi = vecnorm(np.array([1,0,0])+wsign*vertnorms[v])
 		hm = np.identity(3)-2*np.outer(wvi,wvi.T)
 		hhm = np.dot(np.dot(hm.T,ct),hm)
