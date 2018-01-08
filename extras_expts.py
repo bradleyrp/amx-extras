@@ -14,6 +14,7 @@
 step: large
 requires: multiply
 equilibration: npt-bilayer
+maxwarn: 1
 proceed: True
 genconf gap: 0.3
 nx: 2
