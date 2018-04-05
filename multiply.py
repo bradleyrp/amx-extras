@@ -18,15 +18,20 @@ def multiply(nx=1,ny=1,nz=1,quirky_ions=True,structure='system-previous'):
 	#---collect composition details from the previous state settings object
 	state.settings = state.before[-1]['settings']
 	#---! previously loaded the prereqs directly into the state from the last settings
-	state.lipids = state.before[-1]['lipids']
-	state.force_field = state.before[-1]['force_field']
+	state.force_field = state.before[-1].get('force_field',state.settings.get('force_field'))
 	shutil.rmtree(os.path.join(state.here,state.force_field)+'.ff')
 	shutil.copytree(os.path.join(state.before[-1]['here'],state.force_field)+'.ff',
 		os.path.join(state.here,state.force_field)+'.ff')
-	settings['landscape_metadata'] = state.before[-1]['settings']['landscape_metadata']
-	state.sol = state.before[-1]['settings']['sol']
-	state.cation = state.before[-1]['settings']['cation']
-	state.anion = state.before[-1]['settings']['anion']
+	try: settings['landscape_metadata'] = state.before[-1]['settings']['landscape_metadata']
+	except: pass
+	try: state.sol = state.before[-1]['settings']['sol']
+	except: pass
+	try: state.cation = state.before[-1]['settings']['cation']
+	except: pass
+	try: state.anion = state.before[-1]['settings']['anion']
+	except: pass
+	for itp in state.itp:
+		shutil.copyfile(state.before[-1].here+itp,state.here+itp)
 	#---run genconf to multiply the system
 	kwargs = {} if not state.buffer else {'flag':' -dist %.2f %.2f %.2f'%tuple(state.buffer)}
 	#---we multiply the main system, but we may also need to multiply the restraints
@@ -56,5 +61,9 @@ def multiply(nx=1,ny=1,nz=1,quirky_ions=True,structure='system-previous'):
 		register_file('system-flat.gro')
 	#---update the composition
 	state.composition = struct.detect_composition()
+	#! hack for multiply_general expt
+	renamer = settings.get('rename_detected_composition',None)
+	if renamer: state.composition = [[renamer.get(i,i),j] for i,j in state.composition]
 	#---we retain the original lipid list since detect_composition cannot understand alternate names
-	state.lipids = state.before[-1]['lipids']
+	try: state.lipids = state.before[-1]['lipids']
+	except: pass
