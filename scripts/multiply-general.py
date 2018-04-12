@@ -15,10 +15,13 @@ gmx_get_last_frame()
 get_last_mdps()
 # adding mdp_specs to settings will overwrite them
 if state.mdp_specs: write_mdp(param_file=state.mdp_parameters)
-multiply(nx=state.nx,ny=state.ny)
+multiply(nx=state.nx,ny=state.ny,nz=state.q('nz',1))
 write_top('system.top')
 if state.q('minimize',False): minimize('system')
 else: copy_file('system.gro','system-minimized.gro')
+copy_file('system-minimized.gro','system-residues.gro',)
+write_structure_by_chain(structure='system-residues',gro='system')
+gmx('make_ndx',ndx='system-groups',structure='system',inpipe="keep 0\nq\n",log='make-ndx-system-groups')
 # the multiply procedure can benefit from a sequence of topology changes
 if state.equilibrate_tops:
 	# using a sequence of mdp/ff changes overrides the settings.equilibration
@@ -31,7 +34,4 @@ if state.equilibrate_tops:
 # equilibration requires a sequence of MDP files from the previous step
 else: equilibrate(structure='system-minimized',groups='system-groups')
 
-#! iterative development restart with::: rm -rf s02-large state.json && cp state_1.json state.json && make prep exo70_control_pc_ps && cp expt_2.json expt.json && python -B script_2.py
-
-#! this one: rm -rf s03-large state.json && cp state_1.json state.json && make prep dextran_model_building_melt && cp expt_2.json expt.json && python -B script_2.py
-#! failed at this ... oops
+#! actually works to restart the step! rm -rf s03-large state.json && cp state_2.json state.json && make prep dextran_model_building_melt_multiply && cp expt_2.json expt.json && python -B script_2.py

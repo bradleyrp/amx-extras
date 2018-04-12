@@ -60,10 +60,32 @@ def multiply(nx=1,ny=1,nz=1,quirky_ions=True,structure='system-previous'):
 		gmx_register_call(**rule)
 		register_file('system-flat.gro')
 	#---update the composition
-	state.composition = struct.detect_composition()
+	#! for the experiment script multiply-general.py we have to pass through a correction to the composition
+	state.composition = struct.detect_composition(composition_adjust=settings.get('composition_adjust',None))
 	#! hack for multiply_general expt
 	renamer = settings.get('rename_detected_composition',None)
 	if renamer: state.composition = [[renamer.get(i,i),j] for i,j in state.composition]
 	#---we retain the original lipid list since detect_composition cannot understand alternate names
 	try: state.lipids = state.before[-1]['lipids']
 	except: pass
+
+#! extremely bad that you cannot import this. it might be worth centralizing too
+def write_structure_by_chain(structure='system',gro='system_chains'):
+	"""
+	Ensure that each chain has its own residue number. Useful for visualization.
+	"""
+	import numpy as np
+	struct = GMXStructure(state.here+'%s.gro'%structure)
+	polymer_molname = settings.molecule_name
+	residue_name = settings.residue_name
+	#! previously used DMR in the line below and DEX below that, in the component on the if not
+	inds = np.where(struct.residue_names==residue_name)[0]
+	#! assume that we only have a uniform melt of n_p, three beads per, minus two from the end points
+	n_p = state.n_p
+	bpm = settings.beads_per_monomer
+	#! removed a -2 correction to the n_p for use in maltoheptaose which was necessary for removing terminals
+	if not float(len(inds))/float(bpm)/(n_p)==component(polymer_molname): 
+		raise Exception('failed to write structure by chains')
+	resnums = (np.floor(np.arange(len(inds))/((n_p)*bpm))+1).astype(int)
+	struct.residue_indices[inds] = resnums
+	struct.write(state.here+'%s.gro'%gro)
