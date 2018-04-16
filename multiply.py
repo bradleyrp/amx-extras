@@ -30,7 +30,7 @@ def multiply(nx=1,ny=1,nz=1,quirky_ions=True,structure='system-previous'):
 	except: pass
 	try: state.anion = state.before[-1]['settings']['anion']
 	except: pass
-	for itp in state.itp:
+	for itp in state.q('itp',[]):
 		shutil.copyfile(state.before[-1].here+itp,state.here+itp)
 	#---run genconf to multiply the system
 	kwargs = {} if not state.buffer else {'flag':' -dist %.2f %.2f %.2f'%tuple(state.buffer)}
