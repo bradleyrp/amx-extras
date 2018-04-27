@@ -15,7 +15,7 @@ gmx_get_last_frame()
 get_last_mdps()
 # adding mdp_specs to settings will overwrite them
 if state.mdp_specs: write_mdp(param_file=state.mdp_parameters)
-multiply(nx=state.nx,ny=state.ny,nz=state.q('nz',1))
+multiply(nx=state.q('nx',1),ny=state.q('ny',1),nz=state.q('nz',1))
 write_top('system.top')
 if state.q('minimize',False): minimize('system')
 else: copy_file('system.gro','system-minimized.gro')
