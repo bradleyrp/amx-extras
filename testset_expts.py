@@ -143,9 +143,11 @@ mdp specs:|{
     'group':'cgmd',
     'mdps':{
         'input-em-steep-in.mdp':['minimize'],
-        'input-md-npt-bilayer-short-eq-in.mdp':[{'restrain':'posre-com-only','pressure':'npt-semiisotropic-weak',
+        'input-md-npt-bilayer-short-eq-in.mdp':[{'restrain':'posre-com-only',
+            'pressure':'npt-semiisotropic-weak',
             'nsteps':500000,'groups':'protein','temperature':'protein','dt':0.001}],
-        'input-md-npt-bilayer-eq-in.mdp':[{'restrain':'posre-com-only','pressure':'npt-semiisotropic-weak',
+        'input-md-npt-bilayer-eq-in.mdp':[{'restrain':'posre-com-only',
+            'pressure':'npt-semiisotropic-weak',
             'nsteps':500000,'groups':'protein','temperature':'protein','dt':0.01}],
         'input-md-in.mdp':[{'restrain':'posre-com-only','pressure':'npt-semiisotropic-weak',
             'nsteps':500000,'groups':'protein','temperature':'protein'}],},}
