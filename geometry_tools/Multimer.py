@@ -10,10 +10,10 @@ May be expanded to other use-cases later?
 """
 
 import os,sys,re,shutil,copy,glob
-from datapack import DotDict
+from ortho.dictionary import DotDict
 import numpy as np
 #---! this is required on some computers but not others possibly due to weird imports
-from geometry_tools import plane_project,vecangle
+from .geometry_tools import plane_project,vecangle
 
 def reviewer3d(**kwargs):
 	"""Debug 3D manipulations."""
