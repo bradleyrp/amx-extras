@@ -1,6 +1,6 @@
 restart:
   tags: []
-  script: restart.py
+  script: scripts/restart.py
   settings:
     step: restart
     detect: inputs
