@@ -1,0 +1,8 @@
+restart:
+  tags: []
+  script: restart.py
+  settings:
+    step: restart
+    detect: inputs
+    extend: 400
+    legacy_part_names: false
