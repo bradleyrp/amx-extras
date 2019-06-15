@@ -6,3 +6,13 @@ restart:
     detect: inputs
     extend: 400
     legacy_part_names: false
+
+restart_hard:
+  tags: []
+  script: scripts/restart.py
+  settings:
+    step: restart
+    detect: inputs
+    extend: 100
+    legacy_part_names: false
+    hard: true
