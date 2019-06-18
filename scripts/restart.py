@@ -5,7 +5,7 @@ RESTART a GROMACS simulation from minimal components.
 """
 
 from amx import *
-import glob,re,shutil,os
+import glob,re,shutil,os,stat
 
 def unique_input(suffix,where='inputs'):
 	"""Check for a unique file by suffix."""
@@ -47,18 +47,21 @@ elif settings.extend:
 else: raise Exception('dev')
 
 #! sidestep the error in which the cpt step is too far
-if time_start!=0 and instruct_extend=='extend':
+if time_start!=0 and instruct_extend=='extend' and not settings.hard:
 	instruct_extend = 'until'
 	when = when + time_start
 
 # standard restart requires a cpt/tpr only
+tpr_start = 'md.part0001.tpr'
+tpr_start = 'md.part0001.tpr'
+mdp_start = 'md.part0001.mdp'
+checkpoint_in = 'start.cpt'
 mdrun_kwargs = {}
 if not settings.hard:
 	# convert the TPR
 	convert_kwargs = {instruct_extend:when}
-	checkpoint_in = 'start.cpt'
 	gmx('convert-tpr',input=tpr,
-		log='continue-tpr',out='start.tpr',**convert_kwargs)
+		log='continue-tpr',out=tpr_start,**convert_kwargs)
 	shutil.copyfile(cpt,state.here+checkpoint_in)
 	mdrun_kwargs['checkpoint_in'] = checkpoint_in
 # hard restart from a derived structure with new mdp options
@@ -84,31 +87,32 @@ else:
 	kwargs = dict(inpipe='0\n')
 	gmx('trjconv',structure=cpt,input=tpr,
 		out=structure,log='trjconv-cpt-structure',**kwargs)
-	kwargs = dict(out='start.tpr',structure=structure,parameters=mdp,
-		parameters_out='start.mdp',topology=top)
+	kwargs = dict(out=tpr_start,structure=structure,parameters=mdp,
+		parameters_out=mdp_start,topology=top)
 	if ndx: kwargs['groups'] = ndx
 	gmx('grompp',log='grompp-restart',**kwargs)
 
-# run mdrun
-if not settings.legacy_part_names:
-	"""
-	the new default part names are: traj.part0002.trr, traj_comp.part0002.xtc,
-	ener.part0002.edr, md.part0002.log, etc.
-	and gromacs will autodetect as long as you use the call below
-	"""
-	gmx('mdrun',
-		input='start.tpr',
-		log='mdrun-part0002',
-		**mdrun_kwargs)
-# legacy naming scheme for a restart
-else:
-	base = 'md.part0002'
-	gmx('mdrun',noappend=True,
+# provide a continue script with a default extension time
+fn_continue = state.here+'continue.sh'
+with open('amx/gromacs/continue_std.sh') as fp: text = fp.read()
+# substitute instructions so that the continuation script
+#   either continues to an "until" mark or repeats the "extend" from the expt
+text = re.sub('^MODE=(?:.+)$',text,
+	'MODE=%s'%instruct_extend.upper(),flags=re.M)
+if instruct_extend=='extend':
+	text = re.sub('^EXTEND=(?:.+)$',text,
+		'MODE=%s'%str(settings.extend),flags=re.M)
+elif instruct_extend=='until':
+	text = re.sub('^UNTIL=(?:.+)$',text,
+		'MODE=%s'%str(settings.until),flags=re.M)
+else: raise Exception('extension instructions must be "until" or "extend"')
+with open(fn_continue,'w') as fp: fp.write(text)
+st = os.stat(fn_continue)
+os.chmod(fn_continue,st.st_mode | stat.S_IEXEC)
 
-		compressed='%s.xtc'%name,
-		energy='%s.edr'%name,
-		logfile='%s.log'%name,
-		structure='%s.gro'%name,
-		trajectory='%s.trr'%name,
-		log='mdrun-part0002',
-		**mdrun_kwargs)
+gmx('mdrun',
+	input=tpr_start,
+	log='mdrun-part0001',
+	# deffnm ensures separate checkpoints
+	deffnm='md.part0001',
+	**mdrun_kwargs)

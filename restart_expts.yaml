@@ -4,7 +4,7 @@ restart:
   settings:
     step: restart
     detect: inputs
-    extend: 400
+    extend: 1000
     legacy_part_names: false
 
 restart_hard:
@@ -13,6 +13,6 @@ restart_hard:
   settings:
     step: restart
     detect: inputs
-    extend: 100
+    extend: 1000
     legacy_part_names: false
     hard: true
