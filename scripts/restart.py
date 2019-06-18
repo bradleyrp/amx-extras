@@ -97,14 +97,14 @@ fn_continue = state.here+'continue.sh'
 with open('amx/gromacs/continue_std.sh') as fp: text = fp.read()
 # substitute instructions so that the continuation script
 #   either continues to an "until" mark or repeats the "extend" from the expt
-text = re.sub('^MODE=(?:.+)$',text,
-	'MODE=%s'%instruct_extend.upper(),flags=re.M)
+text = re.sub('^MODE=.+\n',
+	'MODE=%s\n'%instruct_extend.lower(),text,flags=re.M)
 if instruct_extend=='extend':
-	text = re.sub('^EXTEND=(?:.+)$',text,
-		'MODE=%s'%str(settings.extend),flags=re.M)
+	text = re.sub('^EXTEND=.+\n',
+		'EXTEND=%s\n'%str(settings.extend),text,flags=re.M)
 elif instruct_extend=='until':
-	text = re.sub('^UNTIL=(?:.+)$',text,
-		'MODE=%s'%str(settings.until),flags=re.M)
+	text = re.sub('^UNTIL=.+\n',
+		'UNTIL=%s\n'%str(settings.until),text,flags=re.M)
 else: raise Exception('extension instructions must be "until" or "extend"')
 with open(fn_continue,'w') as fp: fp.write(text)
 st = os.stat(fn_continue)
